@@ -3,6 +3,7 @@
     <words>
       <w>intermed</w>
       <w>logits</w>
+      <w>minval</w>
       <w>poemcesar</w>
       <w>poetrys</w>
       <w>probs</w>

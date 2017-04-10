@@ -52,7 +52,7 @@ def text_features(poem, feature_words):
 
 
 def get_matrix(poem_word_features):
-    length = max(map(len, poem_word_features()))
+    length = max(map(len, poem_word_features))
     xdata = np.full((len(poem_word_features), length), 0, np.int32)
     for row in range(len(poem_word_features)):
         xdata[row, :len(poem_word_features[row])] = poem_word_features[row]
@@ -62,9 +62,7 @@ def get_matrix(poem_word_features):
 
 
 # 定义RNN
-def neural_network(feature_words, len_poems, rnn_size=128, num_layers=2):
-    input_data = tf.placeholder(tf.int32, [len_poems, None])
-    output_targets = tf.placeholder(tf.int32, [len_poems, None])
+def neural_network(feature_words, input_data, len_poems, rnn_size=128, num_layers=2):
     cell_fun = tf.contrib.rnn.BasicLSTMCell
     cell = cell_fun(rnn_size, state_is_tuple=True)
     cell = tf.contrib.rnn.MultiRNNCell([cell] * num_layers, state_is_tuple=True)
@@ -86,5 +84,35 @@ def train_rnn():
     poems = cut_word(sqlUtil.get_all_content())
     feature_wordss = get_feature_words(poems)
     poem_features = text_features(poems, feature_wordss)
-    poem_matrix = get_matrix(poem_features)
-    logits, last_state, _, _, _ = neural_network(feature_wordss, len(poems))
+    x_matrix, y_matrix = get_matrix(poem_features)
+
+    input_data = tf.placeholder(tf.int32, [len(poems), None])
+    output_targets = tf.placeholder(tf.int32, [len(poems), None])
+
+    logits, last_state, _, _, _ = neural_network(feature_words=feature_wordss, input_data=input_data,
+                                                 len_poems=(len(poems)))
+
+    targets = tf.reshape(output_targets, [-1])
+    loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example([logits], [targets],
+                                                              [tf.ones_like(targets, dtype=tf.float32)],
+                                                              len(feature_wordss))
+    cost = tf.reduce_mean(loss)
+    learning_rate = tf.Variable(0.0, trainable=False)
+    tvars = tf.trainable_variables()
+    grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars), 5)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    train_op = optimizer.apply_gradients(zip(grads, tvars))
+
+    with tf.Session() as sess:
+        sess.run(tf.initialize_all_variables())
+
+        saver = tf.train.Saver(tf.all_variables())
+        for epoch in range(50):
+            sess.run(tf.assign(learning_rate, 0.002 * (0.97 ** epoch)))
+            train_loss, _, _ = sess.run([cost, last_state, train_op],
+                                        feed_dict={input_data: x_matrix, output_targets: y_matrix})
+            if epoch % 7 == 0:
+                saver.save(sess, 'poetry.module', global_step=epoch)
+
+
+train_rnn()

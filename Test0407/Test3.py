@@ -101,9 +101,7 @@ def train_neural_network():
 
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
-
         saver = tf.train.Saver(tf.all_variables())
-
         for epoch in range(50):
             sess.run(tf.assign(learning_rate, 0.002 * (0.97 ** epoch)))
             n = 0
