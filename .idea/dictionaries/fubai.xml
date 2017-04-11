@@ -10,6 +10,7 @@
       <w>probs</w>
       <w>rnnlm</w>
       <w>segs</w>
+      <w>smaples</w>
       <w>softmax</w>
       <w>wordss</w>
     </words>

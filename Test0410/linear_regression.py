@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-x_data = [1, 2, 3]
-y_data = [12, 13, 14]
+x_data = [12, 22, 32]
+y_data = [112, 113, 114]
 
 """
 tf.random_normal | tf.truncated_normal | tf.random_uniform
