@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-x_data = [2., 3., 3.]
-y_data = [1., 2., 3.]
+x_data = [1, 2, 3]
+y_data = [12, 13, 14]
 
 """
 tf.random_normal | tf.truncated_normal | tf.random_uniform
@@ -29,12 +29,12 @@ a = tf.Variable(0.1)
 # 梯度下降优化
 optimizer = tf.train.GradientDescentOptimizer(a)
 train = optimizer.minimize(cost)
+
+# 初始化变量
 init = tf.global_variables_initializer()
 
 sess = tf.Session()
 sess.run(init)
-
-print(sess.run([W, b]))
 
 for step in range(2001):
     sess.run(train)

@@ -3,6 +3,7 @@
     <words>
       <w>intermed</w>
       <w>logits</w>
+      <w>maxval</w>
       <w>minval</w>
       <w>poemcesar</w>
       <w>poetrys</w>
