@@ -42,9 +42,10 @@ sess = tf.Session()
 sess.run(init)
 
 for i in range(-30, 50):
-    print(i * 0.1, sess.run(cost, feed_dict={W: i * 0.1}))
+    x = sess.run(cost, feed_dict={W: i * 0.1})
+    print(i * 0.1, x)
     W_val.append(i * 0.1)
-    cost_val.append(sess.run(cost, feed_dict={W: i * 0.1}))
+    cost_val.append(x)
 
 plt.plot(W_val, cost_val, 'ro')
 plt.ylabel('cost')
