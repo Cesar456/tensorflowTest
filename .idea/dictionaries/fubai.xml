@@ -3,8 +3,10 @@
     <words>
       <w>intermed</w>
       <w>logits</w>
+      <w>lstm</w>
       <w>maxval</w>
       <w>minval</w>
+      <w>multiangle</w>
       <w>poemcesar</w>
       <w>poetrys</w>
       <w>probs</w>
