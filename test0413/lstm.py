@@ -52,7 +52,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.models.rnn.ptb import reader
+from models.tutorials.rnn.ptb import reader
 
 flags = tf.flags
 logging = tf.logging
@@ -89,11 +89,11 @@ class PTBModel(object):
         # Slightly better results can be obtained with forget gate biases
         # initialized to 1 but the hyperparameters of the model would need to be
         # different than reported in the paper.
-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(size, forget_bias=0.0, state_is_tuple=True)
+        lstm_cell = tf.contrib.rnn.BasicLSTMCell(size, forget_bias=0.0, state_is_tuple=True)
         if is_training and py_config.keep_prob < 1:  # 在外面包裹一层dropout
-            lstm_cell = tf.nn.rnn_cell.DropoutWrapper(
+            lstm_cell = tf.contrib.rnn.DropoutWrapper(
                 lstm_cell, output_keep_prob=py_config.keep_prob)
-        cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * py_config.num_layers, state_is_tuple=True)  # 多层lstm cell 堆叠起来
+        cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * py_config.num_layers, state_is_tuple=True)  # 多层lstm cell 堆叠起来
 
         self._initial_state = cell.zero_state(batch_size, data_type())  # 参数初始化,rnn_cell.RNNCell.zero_state
 
@@ -136,7 +136,7 @@ class PTBModel(object):
 
         # loss , shape=[batch*num_steps]
         # 带权重的交叉熵计算
-        loss = tf.nn.seq2seq.sequence_loss_by_example(
+        loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
             [logits],  # output [batch*numsteps, vocab_size]
             [tf.reshape(self._targets, [-1])],  # target, [batch_size, num_steps] 然后展开成一维【列表】
             [tf.ones([batch_size * num_steps], dtype=data_type())])  # weight
@@ -167,9 +167,9 @@ class PTBModel(object):
             tf.float32, shape=[], name="new_learning_rate")  # 用于外部向graph输入新的 lr值
         self._lr_update = tf.assign(self._lr, self._new_lr)  # 使用new_lr来更新lr的值
 
-    def assign_lr(self, session, lr_value):
+    def assign_lr(self, t_session, lr_value):
         # 使用 session 来调用 lr_update 操作
-        session.run(self._lr_update, feed_dict={self._new_lr: lr_value})
+        t_session.run(self._lr_update, feed_dict={self._new_lr: lr_value})
 
     @property
     def input_data(self):
@@ -264,14 +264,14 @@ class TestConfig(object):
     vocab_size = 10000
 
 
-def run_epoch(session, model, data, eval_op, verbose=False):
+def run_epoch(t_session, model, data, eval_op, verbose=False):
     """Runs the model on the given data."""
     # epoch_size 表示批次总数。也就是说，需要向session喂这么多次数据
     epoch_size = ((len(data) // model.batch_size) - 1) // model.num_steps  # // 表示整数除法
     start_time = time.time()
     costs = 0.0
-    iters = 0
-    state = session.run(model.initial_state)
+    t_iters = 0
+    state = t_session.run(model.initial_state)
     for step, (x, y) in enumerate(reader.ptb_iterator(data, model.batch_size,
                                                       model.num_steps)):
         fetches = [model.cost, model.final_state, eval_op]  # 要进行的操作，注意训练时和其他时候eval_op的区别
@@ -279,16 +279,16 @@ def run_epoch(session, model, data, eval_op, verbose=False):
         for j, (c, h) in enumerate(model.initial_state):
             feed_dict[c] = state[j].c  # 这部分有什么用？看不懂
             feed_dict[h] = state[j].h
-        cost, state, _ = session.run(fetches, feed_dict)  # 运行session,获得cost和state
+        cost, state, _ = t_session.run(fetches, feed_dict)  # 运行session,获得cost和state
         costs += cost  # 将 cost 累积
-        iters += model.num_steps
+        t_iters += model.num_steps
 
         if verbose and step % (epoch_size // 10) == 10:  # 也就是每个epoch要输出10个perplexity值
             print("%.3f perplexity: %.3f speed: %.0f wps" %
-                  (step * 1.0 / epoch_size, np.exp(costs / iters),
-                   iters * model.batch_size / (time.time() - start_time)))
+                  (step * 1.0 / epoch_size, np.exp(costs / t_iters),
+                   t_iters * model.batch_size / (time.time() - start_time)))
 
-    return np.exp(costs / iters)
+    return np.exp(costs / t_iters)
 
 
 def get_config():
@@ -346,8 +346,6 @@ if __name__ == '__main__':
         test_perplexity = run_epoch(session, mtest, test_data, tf.no_op())  # 测试困惑度
         print("Test Perplexity: %.3f" % test_perplexity)
 
-
 if __name__ == "__main__":
     pass
     # tf.app.run()
-
